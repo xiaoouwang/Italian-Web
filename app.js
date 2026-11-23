@@ -1,4 +1,5 @@
 const SRT_PATH = "data/sei-complimenti.srt";
+const EXPRESSIONS_PATH = "data/expressions.json";
 
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
@@ -6,6 +7,8 @@ const seek = document.getElementById("seek");
 const currentTimeEl = document.getElementById("currentTime");
 const durationEl = document.getElementById("duration");
 const cueList = document.getElementById("cueList");
+const expressionSection = document.querySelector(".expressions");
+const expressionList = document.getElementById("expressionList");
 const loopSegment = document.getElementById("loopSegment");
 const stopAtEnd = document.getElementById("stopAtEnd");
 const clearFocus = document.getElementById("clearFocus");
@@ -122,6 +125,23 @@ function renderCues() {
   });
 }
 
+/** @param {{ it: string, fr: string }[]} expressions */
+function renderExpressions(expressions) {
+  expressionList.innerHTML = "";
+  expressions.forEach((item) => {
+    const li = document.createElement("li");
+    const it = document.createElement("span");
+    it.lang = "it";
+    it.textContent = item.it;
+    const fr = document.createElement("span");
+    fr.lang = "fr";
+    fr.textContent = item.fr;
+    li.append(it, fr);
+    expressionList.appendChild(li);
+  });
+  expressionSection.hidden = expressions.length === 0;
+}
+
 playBtn.addEventListener("click", () => {
   if (audio.paused) {
     if (focusIndex !== null && audio.currentTime >= cues[focusIndex].end - 0.05) {
@@ -184,10 +204,20 @@ audio.addEventListener("timeupdate", () => {
 });
 
 async function init() {
-  const response = await fetch(SRT_PATH);
-  if (!response.ok) throw new Error(`Could not load transcript (${response.status})`);
-  cues = parseSrt(await response.text());
+  const [srtResponse, expressionsResponse] = await Promise.all([
+    fetch(SRT_PATH),
+    fetch(EXPRESSIONS_PATH),
+  ]);
+
+  if (!srtResponse.ok) throw new Error(`Could not load transcript (${srtResponse.status})`);
+  cues = parseSrt(await srtResponse.text());
   renderCues();
+
+  if (expressionsResponse.ok) {
+    renderExpressions(await expressionsResponse.json());
+  } else {
+    console.error(`Could not load expressions (${expressionsResponse.status})`);
+  }
 }
 
 init().catch((error) => {

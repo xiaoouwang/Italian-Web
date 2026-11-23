@@ -23,7 +23,18 @@
     </header>
 
     <main>
-      <section class="player" aria-label="Audio player">
+      <section class="cues" aria-label="Transcript">
+        <ol id="cueList"></ol>
+      </section>
+
+      <section class="expressions" aria-label="Useful expressions" hidden>
+        <h2>Useful expressions</h2>
+        <ul id="expressionList"></ul>
+      </section>
+    </main>
+
+    <section class="player" aria-label="Audio player">
+      <div class="player-inner">
         <audio id="audio" src="assets/sei-complimenti.mp3" preload="metadata"></audio>
 
         <div class="transport">
@@ -55,21 +66,17 @@
 
         <div class="controls">
           <label class="toggle">
-            <input type="checkbox" id="loopSegment" checked />
+            <input type="checkbox" id="loopSegment" />
             <span>Loop segment</span>
           </label>
           <label class="toggle">
-            <input type="checkbox" id="stopAtEnd" checked />
+            <input type="checkbox" id="stopAtEnd" />
             <span>Stop at end</span>
           </label>
           <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
         </div>
-      </section>
-
-      <section class="cues" aria-label="Transcript">
-        <ol id="cueList"></ol>
-      </section>
-    </main>
+      </div>
+    </section>
 
     <script src="app.js"></script>
   </body>
