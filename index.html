@@ -89,24 +89,26 @@
               step="1"
               aria-label="Seek"
             />
-            <div class="times">
-              <span id="currentTime">0:00</span>
-              <span id="duration">0:00</span>
-            </div>
+          </div>
+
+          <div class="times">
+            <span id="currentTime">0:00</span>
+            <span class="times-sep">/</span>
+            <span id="duration">0:00</span>
           </div>
         </div>
 
         <div class="controls">
           <label class="toggle">
             <input type="checkbox" id="loopSegment" />
-            <span>Loop segment</span>
+            <span>Loop</span>
           </label>
           <label class="toggle">
             <input type="checkbox" id="stopAtEnd" />
-            <span>Stop at end</span>
+            <span>Stop</span>
           </label>
+          <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
           <div class="speed" role="group" aria-label="Playback speed">
-            <span class="speed-label">Speed</span>
             <div id="playbackRate" class="speed-options">
               <button type="button" class="speed-btn" data-rate="0.75" aria-pressed="false">0.75×</button>
               <button type="button" class="speed-btn" data-rate="0.9" aria-pressed="false">0.9×</button>
@@ -116,7 +118,6 @@
               <button type="button" class="speed-btn" data-rate="1.5" aria-pressed="false">1.5×</button>
             </div>
           </div>
-          <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
         </div>
       </div>
     </section>
