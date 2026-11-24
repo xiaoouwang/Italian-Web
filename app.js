@@ -1,5 +1,4 @@
-const SRT_PATH = "data/sei-complimenti.srt";
-const EXPRESSIONS_PATH = "data/expressions.json";
+const PLAYLIST_PATH = "data/playlist.json";
 
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
@@ -7,15 +6,33 @@ const seek = document.getElementById("seek");
 const currentTimeEl = document.getElementById("currentTime");
 const durationEl = document.getElementById("duration");
 const cueList = document.getElementById("cueList");
+const playlistPanel = document.getElementById("playlistPanel");
+const playlistEl = document.getElementById("playlist");
+const playlistCount = document.getElementById("playlistCount");
+const playlistEmpty = document.getElementById("playlistEmpty");
+const playlistToggle = document.getElementById("playlistToggle");
+const playlistCollapsedSummary = document.getElementById("playlistCollapsedSummary");
+const passageFilter = document.getElementById("passageFilter");
+const passageTitle = document.getElementById("passageTitle");
 const expressionSection = document.querySelector(".expressions");
 const expressionList = document.getElementById("expressionList");
 const loopSegment = document.getElementById("loopSegment");
 const stopAtEnd = document.getElementById("stopAtEnd");
+const playbackRate = document.getElementById("playbackRate");
 const clearFocus = document.getElementById("clearFocus");
 const iconPlay = playBtn.querySelector(".icon-play");
 const iconPause = playBtn.querySelector(".icon-pause");
+const SPEED_STORAGE_KEY = "italian-web-playback-rate";
+const PLAYLIST_COLLAPSED_KEY = "italian-web-playlist-collapsed";
 
-/** @type {{ id: number, start: number, end: number, text: string }[]} */
+/** @typedef {{ id: string, title: string, tags?: string[], audio: string, transcript: string, expressions?: string, translations?: string }} Passage */
+
+/** @type {Passage[]} */
+let playlist = [];
+/** @type {number} */
+let currentPassageIndex = 0;
+let passageFilterQuery = "";
+/** @type {{ id: number, start: number, end: number, text: string, fr?: string }[]} */
 let cues = [];
 /** @type {number | null} */
 let focusIndex = null;
@@ -32,6 +49,21 @@ function parseTimestamp(value) {
   return h * 3600 + m * 60 + s + millis / 1000;
 }
 
+function cleanCueText(raw) {
+  const text = raw
+    .replace(/<break\b[^>]*\/?>/gi, " ")
+    .replace(/<break\b[^>]*/gi, " ")
+    .replace(/\btime="[^"]*"\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+
+  if (!text || /^(?:time=.*|\/?>)+$/i.test(text)) return "";
+  return text;
+}
+
 function parseSrt(raw) {
   return raw
     .replace(/\r\n/g, "\n")
@@ -46,10 +78,12 @@ function parseSrt(raw) {
         /(\d{2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{1,3})/
       );
       if (!match) return null;
+      const text = cleanCueText(textLines.join("\n"));
+      if (!text) return null;
       return {
         start: parseTimestamp(match[1]),
         end: parseTimestamp(match[2]),
-        text: textLines.join("\n").trim(),
+        text,
       };
     })
     .filter(Boolean)
@@ -117,14 +151,12 @@ function ensureFocusForSegmentControls() {
   return active;
 }
 
-/** Apply loop / stop as soon as options change or playback crosses a boundary. */
 function applySegmentBoundary() {
   if (!loopSegment.checked && !stopAtEnd.checked) return false;
   if (focusIndex === null) return false;
 
   const cue = cues[focusIndex];
   if (!cue) return false;
-
   if (audio.currentTime < cue.end - 0.03) return false;
 
   if (loopSegment.checked) {
@@ -135,7 +167,6 @@ function applySegmentBoundary() {
 
   if (stopAtEnd.checked) {
     audio.pause();
-    // Stay just inside the cue so the active highlight doesn't jump ahead.
     audio.currentTime = Math.max(cue.start, cue.end - 0.05);
     highlightActive(focusIndex, { scroll: false });
     updateSeekUi();
@@ -203,6 +234,13 @@ function renderCues() {
       <div class="cue-text"></div>
     `;
     btn.querySelector(".cue-text").textContent = cue.text;
+    if (cue.fr) {
+      const fr = document.createElement("div");
+      fr.className = "cue-fr";
+      fr.lang = "fr";
+      fr.textContent = cue.fr;
+      btn.appendChild(fr);
+    }
     btn.addEventListener("click", () => activateCue(index));
     li.appendChild(btn);
     cueList.appendChild(li);
@@ -226,10 +264,169 @@ function renderExpressions(expressions) {
   expressionSection.hidden = expressions.length === 0;
 }
 
-function onSegmentOptionChange(changed) {
-  if (changed.checked) {
-    ensureFocusForSegmentControls();
+function normalizeSearch(value) {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function passageMatchesFilter(passage, query) {
+  if (!query) return true;
+  const haystack = normalizeSearch(
+    [passage.title, passage.id, ...(passage.tags || [])].join(" ")
+  );
+  return query.split(/\s+/).every((token) => haystack.includes(token));
+}
+
+function getFilteredPassages() {
+  const query = normalizeSearch(passageFilterQuery);
+  return playlist
+    .map((passage, index) => ({ passage, index }))
+    .filter(({ passage }) => passageMatchesFilter(passage, query));
+}
+
+function renderPlaylist() {
+  const filtered = getFilteredPassages();
+  playlistEl.innerHTML = "";
+
+  filtered.forEach(({ passage, index }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "playlist-item";
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-selected", index === currentPassageIndex ? "true" : "false");
+    btn.classList.toggle("is-current", index === currentPassageIndex);
+
+    const title = document.createElement("span");
+    title.className = "playlist-item-title";
+    title.textContent = passage.title;
+    btn.appendChild(title);
+
+    if (passage.tags?.length) {
+      const tags = document.createElement("div");
+      tags.className = "playlist-item-tags";
+      passage.tags.forEach((tag) => {
+        const chip = document.createElement("span");
+        chip.className = "playlist-tag";
+        chip.textContent = tag;
+        tags.appendChild(chip);
+      });
+      btn.appendChild(tags);
+    }
+
+    btn.addEventListener("click", () => {
+      if (index !== currentPassageIndex) loadPassage(index);
+    });
+    playlistEl.appendChild(btn);
+  });
+
+  const total = playlist.length;
+  const shown = filtered.length;
+  playlistCount.textContent =
+    passageFilterQuery.trim() && shown !== total ? `${shown} / ${total}` : `${total}`;
+  playlistEmpty.hidden = shown > 0;
+  playlistEl.hidden = shown === 0;
+  updatePlaylistCollapsedSummary();
+}
+
+function updatePlaylistCollapsedSummary() {
+  const current = playlist[currentPassageIndex];
+  playlistCollapsedSummary.textContent = current ? current.title : "";
+}
+
+function setPlaylistCollapsed(collapsed) {
+  playlistPanel.classList.toggle("is-collapsed", collapsed);
+  playlistToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  playlistToggle.textContent = collapsed ? "Expand" : "Minimize";
+  playlistCollapsedSummary.hidden = !collapsed;
+  updatePlaylistCollapsedSummary();
+  try {
+    localStorage.setItem(PLAYLIST_COLLAPSED_KEY, collapsed ? "1" : "0");
+  } catch {
+    /* ignore */
   }
+}
+
+function resetPlaybackState() {
+  stopWatch();
+  audio.pause();
+  setPlayingUi(false);
+  setFocus(null);
+  lastActiveIndex = -1;
+  seek.value = "0";
+  currentTimeEl.textContent = "0:00";
+  durationEl.textContent = "0:00";
+}
+
+async function loadPassage(index, { autoplay = false } = {}) {
+  const passage = playlist[index];
+  if (!passage) return;
+
+  currentPassageIndex = index;
+  resetPlaybackState();
+  renderPlaylist();
+  passageTitle.textContent = passage.title;
+  document.title = `Italian Web — ${passage.title}`;
+  cueList.innerHTML = `<li class="cue-text" style="padding:1rem">Loading…</li>`;
+  expressionSection.hidden = true;
+  expressionList.innerHTML = "";
+
+  const [transcriptResponse, expressionsResponse, translationsResponse] = await Promise.all([
+    fetch(passage.transcript),
+    passage.expressions ? fetch(passage.expressions) : Promise.resolve(null),
+    passage.translations ? fetch(passage.translations) : Promise.resolve(null),
+  ]);
+
+  if (!transcriptResponse.ok) {
+    throw new Error(`Could not load transcript (${transcriptResponse.status})`);
+  }
+
+  cues = parseSrt(await transcriptResponse.text());
+
+  if (translationsResponse?.ok) {
+    /** @type {string[]} */
+    const translations = await translationsResponse.json();
+    cues = cues.map((cue, index) => ({
+      ...cue,
+      fr: typeof translations[index] === "string" ? translations[index] : undefined,
+    }));
+  }
+
+  renderCues();
+
+  if (expressionsResponse?.ok) {
+    renderExpressions(await expressionsResponse.json());
+  } else {
+    renderExpressions([]);
+  }
+
+  audio.src = passage.audio;
+  audio.load();
+  const activeSpeed = playbackRate.querySelector('.speed-btn[aria-pressed="true"]');
+  audio.playbackRate = Number(activeSpeed?.dataset.rate) || 1;
+
+  if (autoplay) {
+    audio.play().catch(() => {});
+  }
+
+  try {
+    history.replaceState(null, "", `#${passage.id}`);
+  } catch {
+    /* ignore */
+  }
+}
+
+function passageIndexFromHash() {
+  const id = location.hash.replace(/^#/, "");
+  if (!id) return 0;
+  const index = playlist.findIndex((passage) => passage.id === id);
+  return index === -1 ? 0 : index;
+}
+
+function onSegmentOptionChange(changed) {
+  if (changed.checked) ensureFocusForSegmentControls();
   applySegmentBoundary();
   syncPlaybackUi();
 }
@@ -273,6 +470,27 @@ clearFocus.addEventListener("click", () => {
 loopSegment.addEventListener("change", () => onSegmentOptionChange(loopSegment));
 stopAtEnd.addEventListener("change", () => onSegmentOptionChange(stopAtEnd));
 
+function applyPlaybackRate(rate) {
+  const value = Number(rate);
+  if (!Number.isFinite(value) || value <= 0) return;
+  audio.playbackRate = value;
+  playbackRate.querySelectorAll(".speed-btn").forEach((btn) => {
+    const active = Number(btn.dataset.rate) === value;
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  try {
+    localStorage.setItem(SPEED_STORAGE_KEY, String(value));
+  } catch {
+    /* ignore */
+  }
+}
+
+playbackRate.addEventListener("click", (event) => {
+  const btn = event.target.closest(".speed-btn");
+  if (!btn || !playbackRate.contains(btn)) return;
+  applyPlaybackRate(btn.dataset.rate);
+});
+
 audio.addEventListener("play", () => {
   setPlayingUi(true);
   startWatch();
@@ -297,24 +515,50 @@ audio.addEventListener("timeupdate", () => {
   syncPlaybackUi();
 });
 
-async function init() {
-  const [srtResponse, expressionsResponse] = await Promise.all([
-    fetch(SRT_PATH),
-    fetch(EXPRESSIONS_PATH),
-  ]);
-
-  if (!srtResponse.ok) throw new Error(`Could not load transcript (${srtResponse.status})`);
-  cues = parseSrt(await srtResponse.text());
-  renderCues();
-
-  if (expressionsResponse.ok) {
-    renderExpressions(await expressionsResponse.json());
-  } else {
-    console.error(`Could not load expressions (${expressionsResponse.status})`);
+window.addEventListener("hashchange", () => {
+  const index = passageIndexFromHash();
+  if (index !== currentPassageIndex) {
+    loadPassage(index).catch(console.error);
   }
+});
+
+passageFilter.addEventListener("input", () => {
+  passageFilterQuery = passageFilter.value;
+  renderPlaylist();
+});
+
+playlistToggle.addEventListener("click", () => {
+  setPlaylistCollapsed(!playlistPanel.classList.contains("is-collapsed"));
+});
+
+async function init() {
+  const response = await fetch(PLAYLIST_PATH);
+  if (!response.ok) throw new Error(`Could not load playlist (${response.status})`);
+  playlist = await response.json();
+  if (!Array.isArray(playlist) || playlist.length === 0) {
+    throw new Error("Playlist is empty");
+  }
+
+  const allowedRates = [...playbackRate.querySelectorAll(".speed-btn")].map(
+    (btn) => btn.dataset.rate
+  );
+  let savedRate = "1";
+  let savedCollapsed = false;
+  try {
+    savedRate = localStorage.getItem(SPEED_STORAGE_KEY) || "1";
+    savedCollapsed = localStorage.getItem(PLAYLIST_COLLAPSED_KEY) === "1";
+  } catch {
+    /* ignore */
+  }
+  if (!allowedRates.includes(savedRate)) savedRate = "1";
+  applyPlaybackRate(savedRate);
+  setPlaylistCollapsed(savedCollapsed);
+
+  await loadPassage(passageIndexFromHash());
 }
 
 init().catch((error) => {
-  cueList.innerHTML = `<li class="cue-text" style="padding:1rem">Could not load transcript.</li>`;
+  passageTitle.textContent = "Could not load playlist";
+  cueList.innerHTML = `<li class="cue-text" style="padding:1rem">Could not load passages.</li>`;
   console.error(error);
 });

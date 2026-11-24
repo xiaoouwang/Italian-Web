@@ -1,0 +1,18 @@
+[
+  {
+    "id": "pratica-quotidiana",
+    "title": "Pratica quotidiana",
+    "tags": ["intro", "breve"],
+    "audio": "assets/sei-complimenti.mp3",
+    "transcript": "data/sei-complimenti.srt",
+    "expressions": "data/expressions.json"
+  },
+  {
+    "id": "sei-complimenti-recupero",
+    "title": "Sei complimenti per recuperare",
+    "tags": ["lavoro", "rete"],
+    "audio": "assets/sei-complimenti-recupero.mp3",
+    "transcript": "data/sei-complimenti-recupero.srt",
+    "translations": "data/sei-complimenti-recupero-fr.json"
+  }
+]
