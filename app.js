@@ -45,6 +45,7 @@ let watchRaf = null;
 /** @type {number | null} */
 let boundaryTimer = null;
 let boundaryLock = false;
+let passageLoadId = 0;
 
 function parseTimestamp(value) {
   const [hms, ms] = value.trim().replace(",", ".").split(".");
@@ -326,9 +327,13 @@ function renderExpressions(expressions) {
 function normalizeSearch(value) {
   return value
     .normalize("NFD")
-    .replace(/\p{M}/gu, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function assetUrl(path) {
+  return new URL(path, document.baseURI).href;
 }
 
 function passageMatchesFilter(passage, query) {
@@ -376,7 +381,9 @@ function renderPlaylist() {
     }
 
     btn.addEventListener("click", () => {
-      if (index !== currentPassageIndex) loadPassage(index);
+      if (index !== currentPassageIndex) {
+        loadPassage(index).catch(console.error);
+      }
     });
     playlistEl.appendChild(btn);
   });
@@ -423,6 +430,7 @@ async function loadPassage(index, { autoplay = false } = {}) {
   const passage = playlist[index];
   if (!passage) return;
 
+  const loadId = ++passageLoadId;
   currentPassageIndex = index;
   resetPlaybackState();
   renderPlaylist();
@@ -432,48 +440,70 @@ async function loadPassage(index, { autoplay = false } = {}) {
   expressionSection.hidden = true;
   expressionList.innerHTML = "";
 
-  const [transcriptResponse, expressionsResponse, translationsResponse] = await Promise.all([
-    fetch(passage.transcript),
-    passage.expressions ? fetch(passage.expressions) : Promise.resolve(null),
-    passage.translations ? fetch(passage.translations) : Promise.resolve(null),
-  ]);
-
-  if (!transcriptResponse.ok) {
-    throw new Error(`Could not load transcript (${transcriptResponse.status})`);
-  }
-
-  cues = parseSrt(await transcriptResponse.text());
-
-  if (translationsResponse?.ok) {
-    /** @type {string[]} */
-    const translations = await translationsResponse.json();
-    cues = cues.map((cue, index) => ({
-      ...cue,
-      fr: typeof translations[index] === "string" ? translations[index] : undefined,
-    }));
-  }
-
-  renderCues();
-
-  if (expressionsResponse?.ok) {
-    renderExpressions(await expressionsResponse.json());
-  } else {
-    renderExpressions([]);
-  }
-
-  audio.src = passage.audio;
-  audio.load();
-  const activeSpeed = playbackRate.querySelector('.speed-btn[aria-pressed="true"]');
-  audio.playbackRate = Number(activeSpeed?.dataset.rate) || 1;
-
-  if (autoplay) {
-    audio.play().catch(() => {});
-  }
-
   try {
-    history.replaceState(null, "", `#${passage.id}`);
-  } catch {
-    /* ignore */
+    const [transcriptResponse, expressionsResponse, translationsResponse] = await Promise.all([
+      fetch(assetUrl(passage.transcript), { cache: "no-cache" }),
+      passage.expressions
+        ? fetch(assetUrl(passage.expressions), { cache: "no-cache" })
+        : Promise.resolve(null),
+      passage.translations
+        ? fetch(assetUrl(passage.translations), { cache: "no-cache" })
+        : Promise.resolve(null),
+    ]);
+
+    if (loadId !== passageLoadId) return;
+
+    if (!transcriptResponse.ok) {
+      throw new Error(`Could not load transcript (${transcriptResponse.status})`);
+    }
+
+    const transcriptText = await transcriptResponse.text();
+    if (loadId !== passageLoadId) return;
+
+    cues = parseSrt(transcriptText);
+    if (!cues.length) {
+      throw new Error("Transcript is empty");
+    }
+
+    if (translationsResponse?.ok) {
+      /** @type {string[]} */
+      const translations = await translationsResponse.json();
+      if (loadId !== passageLoadId) return;
+      cues = cues.map((cue, cueIndex) => ({
+        ...cue,
+        fr: typeof translations[cueIndex] === "string" ? translations[cueIndex] : undefined,
+      }));
+    }
+
+    renderCues();
+
+    if (expressionsResponse?.ok) {
+      renderExpressions(await expressionsResponse.json());
+    } else {
+      renderExpressions([]);
+    }
+
+    if (loadId !== passageLoadId) return;
+
+    audio.src = assetUrl(passage.audio);
+    audio.load();
+    const activeSpeed = playbackRate.querySelector('.speed-btn[aria-pressed="true"]');
+    audio.playbackRate = Number(activeSpeed?.dataset.rate) || 1;
+
+    if (autoplay) {
+      audio.play().catch(() => {});
+    }
+
+    try {
+      history.replaceState(null, "", `#${passage.id}`);
+    } catch {
+      /* ignore */
+    }
+  } catch (error) {
+    if (loadId !== passageLoadId) return;
+    cues = [];
+    cueList.innerHTML = `<li class="cue-text" style="padding:1rem">Could not load this passage. Pull to refresh, or reopen the app.</li>`;
+    console.error(error);
   }
 }
 
@@ -622,14 +652,25 @@ function setupStickyPlayer() {
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((error) => {
-      console.error("Service worker registration failed", error);
-    });
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then((registration) => {
+        registration.update().catch(() => {});
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          // Pick up fresh passage data after SW updates.
+          if (sessionStorage.getItem("italian-web-sw-reloaded")) return;
+          sessionStorage.setItem("italian-web-sw-reloaded", "1");
+          location.reload();
+        });
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed", error);
+      });
   });
 }
 
 async function init() {
-  const response = await fetch(PLAYLIST_PATH);
+  const response = await fetch(assetUrl(PLAYLIST_PATH), { cache: "no-cache" });
   if (!response.ok) throw new Error(`Could not load playlist (${response.status})`);
   playlist = await response.json();
   if (!Array.isArray(playlist) || playlist.length === 0) {
