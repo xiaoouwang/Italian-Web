@@ -436,8 +436,6 @@ function updatePlaylistCollapsedSummary() {
 function setPlaylistCollapsed(collapsed) {
   playlistPanel.classList.toggle("is-collapsed", collapsed);
   playlistToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  playlistToggle.textContent = collapsed ? "Choose" : "Close";
-  playlistCollapsedSummary.hidden = !collapsed;
   updatePlaylistCollapsedSummary();
   updateMainOffset();
   try {

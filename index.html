@@ -44,22 +44,20 @@
     <section id="playerPanel" class="player" aria-label="Audio player">
       <div class="player-inner">
         <nav id="playlistPanel" class="playlist is-collapsed" aria-label="Passages">
-          <div class="playlist-header">
-            <div class="playlist-heading">
-              <p class="playlist-label">Passages</p>
+          <button
+            type="button"
+            id="playlistToggle"
+            class="playlist-toggle"
+            aria-expanded="false"
+            aria-controls="playlistBody"
+          >
+            <span class="playlist-toggle-label">
+              <span class="playlist-label">Passages</span>
               <span id="playlistCount" class="playlist-count" aria-live="polite"></span>
-            </div>
-            <button
-              type="button"
-              id="playlistToggle"
-              class="playlist-toggle"
-              aria-expanded="false"
-              aria-controls="playlistBody"
-            >
-              Choose
-            </button>
-          </div>
-          <p id="playlistCollapsedSummary" class="playlist-collapsed-summary"></p>
+            </span>
+            <span id="playlistCollapsedSummary" class="playlist-collapsed-summary"></span>
+            <span class="playlist-chevron" aria-hidden="true"></span>
+          </button>
           <div id="playlistBody" class="playlist-body">
             <label class="playlist-filter">
               <span class="visually-hidden">Filter passages</span>
@@ -79,26 +77,12 @@
         <audio id="audio" preload="metadata"></audio>
 
         <div class="transport">
-          <div class="transport-nav" role="group" aria-label="Passage navigation">
-            <button type="button" id="prevPassage" class="skip-btn" aria-label="Previous passage">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6h2v12H6V6zm3.5 6 8.5 6V6l-8.5 6z" />
-              </svg>
-            </button>
-            <button type="button" id="playBtn" class="play-btn" aria-label="Play">
-              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 5.14v13.72L19 12 8 5.14z" />
-              </svg>
-              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true" hidden>
-                <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
-              </svg>
-            </button>
-            <button type="button" id="nextPassage" class="skip-btn" aria-label="Next passage">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M16 6h2v12h-2V6zM6 18l8.5-6L6 6v12z" />
-              </svg>
-            </button>
-          </div>
+          <button type="button" id="prevPassage" class="skip-btn" aria-label="Previous passage">‹</button>
+          <button type="button" id="playBtn" class="play-btn" aria-label="Play">
+            <span class="icon-play" aria-hidden="true">▶</span>
+            <span class="icon-pause" aria-hidden="true" hidden>❚❚</span>
+          </button>
+          <button type="button" id="nextPassage" class="skip-btn" aria-label="Next passage">›</button>
 
           <div class="scrub">
             <input
@@ -112,13 +96,10 @@
             />
           </div>
 
-          <div class="transport-meta">
-            <div class="times">
-              <span id="currentTime">0:00</span>
-              <span class="times-sep">/</span>
-              <span id="duration">0:00</span>
-            </div>
-            <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
+          <div class="times">
+            <span id="currentTime">0:00</span>
+            <span class="times-sep">/</span>
+            <span id="duration">0:00</span>
           </div>
         </div>
 
@@ -131,14 +112,15 @@
             <input type="checkbox" id="stopAtEnd" />
             <span>Stop</span>
           </label>
+          <button type="button" id="clearFocus" class="ghost" aria-label="Play all" disabled>All</button>
           <div class="speed" role="group" aria-label="Playback speed">
             <div id="playbackRate" class="speed-options">
-              <button type="button" class="speed-btn" data-rate="0.75" aria-pressed="false">0.75×</button>
-              <button type="button" class="speed-btn" data-rate="0.9" aria-pressed="false">0.9×</button>
-              <button type="button" class="speed-btn" data-rate="1" aria-pressed="true">1×</button>
-              <button type="button" class="speed-btn" data-rate="1.1" aria-pressed="false">1.1×</button>
-              <button type="button" class="speed-btn" data-rate="1.25" aria-pressed="false">1.25×</button>
-              <button type="button" class="speed-btn" data-rate="1.5" aria-pressed="false">1.5×</button>
+              <button type="button" class="speed-btn" data-rate="0.75" aria-pressed="false">0.75</button>
+              <button type="button" class="speed-btn" data-rate="0.9" aria-pressed="false">0.9</button>
+              <button type="button" class="speed-btn" data-rate="1" aria-pressed="true">1</button>
+              <button type="button" class="speed-btn" data-rate="1.1" aria-pressed="false">1.1</button>
+              <button type="button" class="speed-btn" data-rate="1.25" aria-pressed="false">1.25</button>
+              <button type="button" class="speed-btn" data-rate="1.5" aria-pressed="false">1.5</button>
             </div>
           </div>
         </div>
