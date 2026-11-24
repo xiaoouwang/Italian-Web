@@ -44,6 +44,9 @@ let lastActiveIndex = -1;
 let seeking = false;
 /** @type {number | null} */
 let watchRaf = null;
+/** @type {number | null} */
+let boundaryTimer = null;
+let boundaryLock = false;
 
 function parseTimestamp(value) {
   const [hms, ms] = value.trim().replace(",", ".").split(".");
@@ -154,26 +157,78 @@ function ensureFocusForSegmentControls() {
   return active;
 }
 
+function boundaryLeadSeconds() {
+  // Mobile clocks jump; lead a bit more at higher speeds.
+  return Math.min(0.2, 0.06 + 0.05 * (audio.playbackRate || 1));
+}
+
+function clearBoundaryTimer() {
+  if (boundaryTimer !== null) {
+    clearTimeout(boundaryTimer);
+    boundaryTimer = null;
+  }
+}
+
+function scheduleBoundaryWatch() {
+  clearBoundaryTimer();
+  if (audio.paused || audio.ended || focusIndex === null) return;
+  if (!loopSegment.checked && !stopAtEnd.checked) return;
+
+  const cue = cues[focusIndex];
+  if (!cue) return;
+
+  const rate = Math.max(0.01, audio.playbackRate || 1);
+  const lead = boundaryLeadSeconds();
+  const remainingMs = ((cue.end - lead) - audio.currentTime) * (1000 / rate);
+
+  if (remainingMs <= 0) {
+    applySegmentBoundary();
+    return;
+  }
+
+  boundaryTimer = window.setTimeout(() => {
+    boundaryTimer = null;
+    if (!applySegmentBoundary() && !audio.paused && !audio.ended) {
+      scheduleBoundaryWatch();
+    }
+  }, Math.max(12, remainingMs));
+}
+
 function applySegmentBoundary() {
+  if (boundaryLock) return false;
   if (!loopSegment.checked && !stopAtEnd.checked) return false;
   if (focusIndex === null) return false;
 
   const cue = cues[focusIndex];
   if (!cue) return false;
-  if (audio.currentTime < cue.end - 0.03) return false;
 
-  if (loopSegment.checked) {
-    audio.currentTime = cue.start;
-    highlightActive(focusIndex);
-    return true;
-  }
+  const lead = boundaryLeadSeconds();
+  if (audio.currentTime < cue.end - lead) return false;
 
-  if (stopAtEnd.checked) {
-    audio.pause();
-    audio.currentTime = Math.max(cue.start, cue.end - 0.05);
-    highlightActive(focusIndex, { scroll: false });
-    updateSeekUi();
-    return true;
+  boundaryLock = true;
+  clearBoundaryTimer();
+
+  try {
+    if (loopSegment.checked) {
+      audio.currentTime = cue.start;
+      highlightActive(focusIndex);
+      scheduleBoundaryWatch();
+      return true;
+    }
+
+    if (stopAtEnd.checked) {
+      audio.pause();
+      const clamped = Math.max(cue.start, Math.min(audio.currentTime, cue.end - 0.02));
+      audio.currentTime = clamped;
+      highlightActive(focusIndex, { scroll: false });
+      updateSeekUi();
+      setPlayingUi(false);
+      return true;
+    }
+  } finally {
+    window.setTimeout(() => {
+      boundaryLock = false;
+    }, 40);
   }
 
   return false;
@@ -190,6 +245,7 @@ function syncPlaybackUi() {
 }
 
 function startWatch() {
+  scheduleBoundaryWatch();
   if (watchRaf !== null) return;
   const tick = () => {
     syncPlaybackUi();
@@ -203,6 +259,7 @@ function startWatch() {
 }
 
 function stopWatch() {
+  clearBoundaryTimer();
   if (watchRaf !== null) {
     cancelAnimationFrame(watchRaf);
     watchRaf = null;
@@ -216,6 +273,7 @@ function activateCue(index, { play = true } = {}) {
   audio.currentTime = cue.start;
   updateSeekUi();
   highlightActive(index);
+  scheduleBoundaryWatch();
   if (play) {
     audio.play().catch(() => {});
   }
@@ -429,8 +487,13 @@ function passageIndexFromHash() {
 }
 
 function onSegmentOptionChange(changed) {
-  if (changed.checked) ensureFocusForSegmentControls();
+  if (changed.checked) {
+    if (changed === loopSegment) stopAtEnd.checked = false;
+    if (changed === stopAtEnd) loopSegment.checked = false;
+    ensureFocusForSegmentControls();
+  }
   applySegmentBoundary();
+  scheduleBoundaryWatch();
   syncPlaybackUi();
 }
 
@@ -452,6 +515,7 @@ seek.addEventListener("pointerdown", () => {
 seek.addEventListener("pointerup", () => {
   seeking = false;
   syncPlaybackUi();
+  scheduleBoundaryWatch();
 });
 
 seek.addEventListener("pointercancel", () => {
@@ -464,6 +528,7 @@ seek.addEventListener("input", () => {
   currentTimeEl.textContent = formatTime(audio.currentTime);
   const active = findCueAt(audio.currentTime);
   if (active !== -1) highlightActive(active);
+  scheduleBoundaryWatch();
 });
 
 clearFocus.addEventListener("click", () => {
@@ -486,6 +551,7 @@ function applyPlaybackRate(rate) {
   } catch {
     /* ignore */
   }
+  scheduleBoundaryWatch();
 }
 
 playbackRate.addEventListener("click", (event) => {

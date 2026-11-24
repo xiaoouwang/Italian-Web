@@ -1,4 +1,4 @@
-const CACHE = "italian-web-v1";
+const CACHE = "italian-web-v2";
 const SHELL = [
   "./",
   "./index.html",
