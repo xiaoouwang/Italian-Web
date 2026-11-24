@@ -16,6 +16,10 @@ Choose a passage from the playlist, then tap any timed line to jump to that stre
 npx serve .
 ```
 
+## Install on Android
+
+Open the GitHub Pages URL in Chrome → menu → **Install app** / **Add to Home screen**.
+
 ## GitHub Pages
 
 Published from the `master` branch root.
