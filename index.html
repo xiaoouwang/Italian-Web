@@ -26,38 +26,6 @@
 
     <header class="top">
       <p class="brand">Italian Web</p>
-      <nav id="playlistPanel" class="playlist" aria-label="Passages">
-        <div class="playlist-header">
-          <p class="playlist-label">Passages</p>
-          <div class="playlist-header-actions">
-            <span id="playlistCount" class="playlist-count" aria-live="polite"></span>
-            <button
-              type="button"
-              id="playlistToggle"
-              class="playlist-toggle"
-              aria-expanded="true"
-              aria-controls="playlistBody"
-            >
-              Minimize
-            </button>
-          </div>
-        </div>
-        <div id="playlistBody" class="playlist-body">
-          <label class="playlist-filter">
-            <span class="visually-hidden">Filter passages</span>
-            <input
-              type="search"
-              id="passageFilter"
-              placeholder="Filter by title or tag…"
-              autocomplete="off"
-              enterkeyhint="search"
-            />
-          </label>
-          <div id="playlist" class="playlist-list" role="listbox" aria-label="Choose a passage"></div>
-          <p id="playlistEmpty" class="playlist-empty" hidden>No passages match.</p>
-        </div>
-        <p id="playlistCollapsedSummary" class="playlist-collapsed-summary" hidden></p>
-      </nav>
       <h1 id="passageTitle">Loading…</h1>
       <p class="lede">Tap a line to practice just that stretch of audio.</p>
     </header>
@@ -75,17 +43,62 @@
 
     <section id="playerPanel" class="player" aria-label="Audio player">
       <div class="player-inner">
+        <nav id="playlistPanel" class="playlist is-collapsed" aria-label="Passages">
+          <div class="playlist-header">
+            <div class="playlist-heading">
+              <p class="playlist-label">Passages</p>
+              <span id="playlistCount" class="playlist-count" aria-live="polite"></span>
+            </div>
+            <button
+              type="button"
+              id="playlistToggle"
+              class="playlist-toggle"
+              aria-expanded="false"
+              aria-controls="playlistBody"
+            >
+              Choose
+            </button>
+          </div>
+          <p id="playlistCollapsedSummary" class="playlist-collapsed-summary"></p>
+          <div id="playlistBody" class="playlist-body">
+            <label class="playlist-filter">
+              <span class="visually-hidden">Filter passages</span>
+              <input
+                type="search"
+                id="passageFilter"
+                placeholder="Filter by title or tag…"
+                autocomplete="off"
+                enterkeyhint="search"
+              />
+            </label>
+            <div id="playlist" class="playlist-list" role="listbox" aria-label="Choose a passage"></div>
+            <p id="playlistEmpty" class="playlist-empty" hidden>No passages match.</p>
+          </div>
+        </nav>
+
         <audio id="audio" preload="metadata"></audio>
 
         <div class="transport">
-          <button type="button" id="playBtn" class="play-btn" aria-label="Play">
-            <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 5.14v13.72L19 12 8 5.14z" />
-            </svg>
-            <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true" hidden>
-              <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
-            </svg>
-          </button>
+          <div class="transport-nav" role="group" aria-label="Passage navigation">
+            <button type="button" id="prevPassage" class="skip-btn" aria-label="Previous passage">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6h2v12H6V6zm3.5 6 8.5 6V6l-8.5 6z" />
+              </svg>
+            </button>
+            <button type="button" id="playBtn" class="play-btn" aria-label="Play">
+              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5.14v13.72L19 12 8 5.14z" />
+              </svg>
+              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true" hidden>
+                <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
+              </svg>
+            </button>
+            <button type="button" id="nextPassage" class="skip-btn" aria-label="Next passage">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16 6h2v12h-2V6zM6 18l8.5-6L6 6v12z" />
+              </svg>
+            </button>
+          </div>
 
           <div class="scrub">
             <input
@@ -99,23 +112,24 @@
             />
           </div>
 
-          <div class="times">
-            <span id="currentTime">0:00</span>
-            <span class="times-sep">/</span>
-            <span id="duration">0:00</span>
+          <div class="transport-meta">
+            <div class="times">
+              <span id="currentTime">0:00</span>
+              <span class="times-sep">/</span>
+              <span id="duration">0:00</span>
+            </div>
+            <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
           </div>
-
-          <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
         </div>
 
         <div class="controls-row">
           <label class="toggle">
             <input type="checkbox" id="loopSegment" />
-            <span>Loop segment</span>
+            <span>Loop</span>
           </label>
           <label class="toggle">
             <input type="checkbox" id="stopAtEnd" />
-            <span>Stop at end</span>
+            <span>Stop</span>
           </label>
           <div class="speed" role="group" aria-label="Playback speed">
             <div id="playbackRate" class="speed-options">

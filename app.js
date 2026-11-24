@@ -2,6 +2,8 @@ const PLAYLIST_PATH = "data/playlist.json";
 
 const audio = document.getElementById("audio");
 const playBtn = document.getElementById("playBtn");
+const prevPassageBtn = document.getElementById("prevPassage");
+const nextPassageBtn = document.getElementById("nextPassage");
 const seek = document.getElementById("seek");
 const currentTimeEl = document.getElementById("currentTime");
 const durationEl = document.getElementById("duration");
@@ -384,6 +386,7 @@ function renderPlaylist() {
       if (index !== currentPassageIndex) {
         loadPassage(index).catch(console.error);
       }
+      setPlaylistCollapsed(true);
     });
     playlistEl.appendChild(btn);
   });
@@ -395,6 +398,34 @@ function renderPlaylist() {
   playlistEmpty.hidden = shown > 0;
   playlistEl.hidden = shown === 0;
   updatePlaylistCollapsedSummary();
+  updateSkipButtons();
+}
+
+function getNavigationQueue() {
+  const filtered = getFilteredPassages();
+  if (filtered.some(({ index }) => index === currentPassageIndex)) {
+    return filtered.map(({ index }) => index);
+  }
+  return playlist.map((_, index) => index);
+}
+
+function updateSkipButtons() {
+  const canSkip = getNavigationQueue().length > 1;
+  prevPassageBtn.disabled = !canSkip;
+  nextPassageBtn.disabled = !canSkip;
+}
+
+function skipPassage(direction) {
+  const queue = getNavigationQueue();
+  if (queue.length < 2) return;
+
+  let position = queue.indexOf(currentPassageIndex);
+  if (position < 0) position = 0;
+  const nextIndex = queue[(position + direction + queue.length) % queue.length];
+  if (nextIndex === currentPassageIndex) return;
+
+  const shouldAutoplay = !audio.paused;
+  loadPassage(nextIndex, { autoplay: shouldAutoplay }).catch(console.error);
 }
 
 function updatePlaylistCollapsedSummary() {
@@ -405,14 +436,22 @@ function updatePlaylistCollapsedSummary() {
 function setPlaylistCollapsed(collapsed) {
   playlistPanel.classList.toggle("is-collapsed", collapsed);
   playlistToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  playlistToggle.textContent = collapsed ? "Expand" : "Minimize";
+  playlistToggle.textContent = collapsed ? "Choose" : "Close";
   playlistCollapsedSummary.hidden = !collapsed;
   updatePlaylistCollapsedSummary();
+  updateMainOffset();
   try {
     localStorage.setItem(PLAYLIST_COLLAPSED_KEY, collapsed ? "1" : "0");
   } catch {
     /* ignore */
   }
+}
+
+function updateMainOffset() {
+  const main = document.querySelector("main");
+  if (!main || !playerPanel) return;
+  const height = Math.ceil(playerPanel.getBoundingClientRect().height);
+  main.style.paddingBottom = `calc(${height + 16}px)`;
 }
 
 function resetPlaybackState() {
@@ -535,6 +574,9 @@ playBtn.addEventListener("click", () => {
     audio.pause();
   }
 });
+
+prevPassageBtn.addEventListener("click", () => skipPassage(-1));
+nextPassageBtn.addEventListener("click", () => skipPassage(1));
 
 seek.addEventListener("pointerdown", () => {
   seeking = true;
@@ -681,10 +723,11 @@ async function init() {
     (btn) => btn.dataset.rate
   );
   let savedRate = "1";
-  let savedCollapsed = false;
+  let savedCollapsed = true;
   try {
     savedRate = localStorage.getItem(SPEED_STORAGE_KEY) || "1";
-    savedCollapsed = localStorage.getItem(PLAYLIST_COLLAPSED_KEY) === "1";
+    const storedCollapsed = localStorage.getItem(PLAYLIST_COLLAPSED_KEY);
+    savedCollapsed = storedCollapsed === null ? true : storedCollapsed === "1";
   } catch {
     /* ignore */
   }
@@ -692,6 +735,11 @@ async function init() {
   applyPlaybackRate(savedRate);
   setPlaylistCollapsed(savedCollapsed);
   setupStickyPlayer();
+  updateMainOffset();
+  window.addEventListener("resize", updateMainOffset);
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(updateMainOffset).observe(playerPanel);
+  }
   registerServiceWorker();
 
   await loadPassage(passageIndexFromHash());

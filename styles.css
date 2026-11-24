@@ -81,42 +81,36 @@ body {
 }
 
 .playlist {
-  margin: 0 0 1rem;
-  padding: 0.85rem;
-  border: 1.5px solid rgba(20, 38, 31, 0.14);
-  border-radius: 18px;
-  background: rgba(255, 252, 246, 0.55);
+  margin: 0 0 0.45rem;
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .playlist-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.55rem;
+  gap: 0.65rem;
 }
 
-.playlist.is-collapsed .playlist-header {
-  margin-bottom: 0;
+.playlist-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  min-width: 0;
 }
 
 .playlist-label {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
 
-.playlist-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
 .playlist-count {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: rgba(58, 83, 72, 0.7);
   font-variant-numeric: tabular-nums;
 }
@@ -124,16 +118,17 @@ body {
 .playlist-toggle {
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.3rem 0.7rem;
-  background: rgba(255, 255, 255, 0.7);
+  padding: 0.4rem 0.85rem;
+  background: rgba(255, 255, 255, 0.75);
   color: var(--ink-soft);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  min-height: 2rem;
+  min-height: 2.25rem;
+  flex-shrink: 0;
 }
 
 .playlist-toggle:hover {
@@ -145,28 +140,39 @@ body {
   display: none;
 }
 
+.playlist:not(.is-collapsed) .playlist-collapsed-summary {
+  display: none;
+}
+
 .playlist-collapsed-summary {
-  margin: 0.45rem 0 0;
-  font-size: 0.92rem;
+  margin: 0.28rem 0 0;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--ink);
-  line-height: 1.3;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-body {
+  margin-top: 0.5rem;
 }
 
 .playlist-filter {
   display: block;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.5rem;
 }
 
 .playlist-filter input {
   width: 100%;
   border: 1.5px solid rgba(20, 38, 31, 0.16);
-  border-radius: 12px;
-  padding: 0.7rem 0.85rem;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  background: rgba(255, 255, 255, 0.8);
   color: var(--ink);
   font: inherit;
-  font-size: 1rem;
+  font-size: 16px;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -184,26 +190,27 @@ body {
 .playlist-list {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  max-height: min(40vh, 18rem);
+  gap: 0.35rem;
+  max-height: min(28vh, 11rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding-right: 0.15rem;
+  padding-right: 0.1rem;
 }
 
 .playlist-item {
   width: 100%;
   text-align: left;
-  border: 1.5px solid rgba(20, 38, 31, 0.14);
-  border-radius: 12px;
-  padding: 0.7rem 0.85rem;
+  border: 1.5px solid rgba(20, 38, 31, 0.12);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
   background: rgba(255, 255, 255, 0.55);
   color: var(--ink);
   font: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  min-height: 2.75rem;
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -224,7 +231,7 @@ body {
 
 .playlist-item-title {
   display: block;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   line-height: 1.3;
 }
@@ -232,23 +239,23 @@ body {
 .playlist-item-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.35rem;
+  gap: 0.25rem;
+  margin-top: 0.28rem;
 }
 
 .playlist-tag {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.02em;
   color: rgba(58, 83, 72, 0.7);
   background: rgba(47, 107, 85, 0.08);
   border-radius: 999px;
-  padding: 0.12rem 0.45rem;
+  padding: 0.1rem 0.4rem;
 }
 
 .playlist-empty {
-  margin: 0.35rem 0 0;
-  font-size: 0.88rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
   color: rgba(58, 83, 72, 0.65);
 }
 
@@ -270,7 +277,7 @@ h1 {
 main {
   max-width: 40rem;
   margin: 0 auto;
-  padding: 0 1rem calc(7.75rem + var(--safe-bottom));
+  padding: 0 1rem calc(12rem + var(--safe-bottom));
 }
 
 .player {
@@ -279,7 +286,7 @@ main {
   right: 0;
   bottom: 0;
   z-index: 10000;
-  padding: 0.4rem 0.65rem calc(0.4rem + var(--safe-bottom));
+  padding: 0.55rem 0.75rem calc(0.55rem + var(--safe-bottom));
   border-top: 1px solid var(--line);
   background: #f3efe6;
   box-shadow: 0 -8px 24px rgba(20, 38, 31, 0.1);
@@ -294,38 +301,65 @@ main {
 }
 
 .transport {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "nav scrub"
+    "nav meta";
+  column-gap: 0.45rem;
+  row-gap: 0.05rem;
   align-items: center;
-  gap: 0.4rem;
 }
 
-.play-btn {
+.transport-nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+.transport-meta {
+  grid-area: meta;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.play-btn,
+.skip-btn {
   flex: 0 0 auto;
-  width: 2.35rem;
-  height: 2.35rem;
   border: 0;
-  border-radius: 50%;
-  background: var(--leaf);
-  color: #f7f3ea;
   display: grid;
   place-items: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: transform 0.18s ease, background 0.18s ease;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.play-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--leaf);
+  color: #f7f3ea;
 }
 
 .play-btn:hover {
   background: var(--leaf-bright);
 }
 
-.play-btn:active {
+.play-btn:active,
+.skip-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
 
-.play-btn svg {
-  width: 1.05rem;
-  height: 1.05rem;
+.play-btn svg,
+.skip-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
   fill: currentColor;
 }
 
@@ -333,19 +367,36 @@ main {
   margin-left: 0.08rem;
 }
 
+.skip-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--leaf);
+}
+
+.skip-btn:hover:not(:disabled) {
+  background: rgba(47, 107, 85, 0.12);
+}
+
+.skip-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .scrub {
-  flex: 1;
+  grid-area: scrub;
   min-width: 0;
   display: flex;
   align-items: center;
-  height: 2.35rem;
+  height: 2rem;
 }
 
 .scrub input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 2.35rem;
+  height: 2rem;
   margin: 0;
   background: transparent;
   cursor: pointer;
@@ -361,9 +412,9 @@ main {
 .scrub input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 1rem;
-  height: 1rem;
-  margin-top: -0.36rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: -0.44rem;
   border-radius: 50%;
   border: 0;
   background: var(--leaf-bright);
@@ -376,8 +427,8 @@ main {
 }
 
 .scrub input[type="range"]::-moz-range-thumb {
-  width: 1rem;
-  height: 1rem;
+  width: 1.15rem;
+  height: 1.15rem;
   border-radius: 50%;
   border: 0;
   background: var(--leaf-bright);
@@ -388,7 +439,7 @@ main {
   align-items: center;
   gap: 0.12rem;
   flex: 0 0 auto;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -401,23 +452,19 @@ main {
 .controls-row {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.2rem;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
   min-width: 0;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 0.05rem;
 }
 
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
+  gap: 0.3rem;
   flex: 0 0 auto;
-  min-height: 1.9rem;
-  padding: 0 0.05rem;
-  font-size: 0.72rem;
+  min-height: 2.25rem;
+  padding: 0 0.1rem;
+  font-size: 0.78rem;
   color: var(--ink-soft);
   cursor: pointer;
   user-select: none;
@@ -428,8 +475,8 @@ main {
 
 .toggle input {
   accent-color: var(--leaf-bright);
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 1rem;
+  height: 1rem;
   flex: 0 0 auto;
   margin: 0;
   pointer-events: auto;
@@ -439,12 +486,12 @@ main {
   display: flex;
   align-items: center;
   flex: 1 1 auto;
-  min-width: 11rem;
+  min-width: 0;
 }
 
 .speed-options {
   display: grid;
-  grid-template-columns: repeat(6, minmax(2.1rem, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   width: 100%;
   gap: 0.2rem;
   min-width: 0;
@@ -452,14 +499,14 @@ main {
 
 .speed-btn {
   min-width: 0;
-  min-height: 1.9rem;
+  min-height: 2.25rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.15rem 0.1rem;
+  padding: 0.15rem 0.05rem;
   background: rgba(255, 252, 246, 0.95);
   color: var(--ink-soft);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -483,10 +530,10 @@ main {
   background: transparent;
   color: var(--ink-soft);
   border-radius: 999px;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.65rem;
   font: inherit;
-  font-size: 0.72rem;
-  min-height: 1.9rem;
+  font-size: 0.75rem;
+  min-height: 2rem;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -528,7 +575,7 @@ main {
   cursor: pointer;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
   scroll-margin-top: 1.25rem;
-  scroll-margin-bottom: calc(8.5rem + var(--safe-bottom));
+  scroll-margin-bottom: calc(13rem + var(--safe-bottom));
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -638,13 +685,39 @@ main {
 }
 
 @media (max-width: 380px) {
+  .top {
+    padding-inline: 1rem;
+  }
+
+  .brand {
+    font-size: clamp(1.75rem, 9vw, 2.25rem);
+  }
+
+  .player {
+    padding-inline: 0.6rem;
+  }
+
+  .skip-btn {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .play-btn {
+    width: 2.55rem;
+    height: 2.55rem;
+  }
+
   .speed-btn {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     padding-inline: 0;
   }
 
   .times {
     font-size: 0.68rem;
+  }
+
+  .toggle {
+    font-size: 0.72rem;
   }
 }
 
@@ -659,6 +732,36 @@ main {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
+
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .transport-nav,
+  .scrub,
+  .transport-meta {
+    display: flex;
+  }
+
+  .scrub {
+    flex: 1;
+    height: 2.75rem;
+  }
+
+  .scrub input[type="range"] {
+    height: 2.75rem;
+  }
+
+  .transport-meta {
+    flex: 0 0 auto;
+    gap: 0.55rem;
+  }
+
+  .playlist-filter input {
+    font-size: 0.95rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -667,6 +770,7 @@ main {
   }
 
   .play-btn,
+  .skip-btn,
   .cue {
     transition: none;
   }

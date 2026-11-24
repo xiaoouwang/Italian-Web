@@ -1,4 +1,4 @@
-const CACHE = "italian-web-v4";
+const CACHE = "italian-web-v5";
 const PRECACHE = [
   "./",
   "./index.html",
