@@ -73,7 +73,7 @@
       </section>
     </main>
 
-    <section id="playerPanel" class="player is-compact" aria-label="Audio player">
+    <section id="playerPanel" class="player" aria-label="Audio player">
       <div class="player-inner">
         <audio id="audio" preload="metadata"></audio>
 
@@ -105,29 +105,18 @@
             <span id="duration">0:00</span>
           </div>
 
-          <button
-            type="button"
-            id="playerExtrasToggle"
-            class="player-extras-toggle"
-            aria-expanded="false"
-            aria-controls="playerExtras"
-          >
-            Options
-          </button>
+          <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
         </div>
 
-        <div id="playerExtras" class="player-extras">
-          <div class="controls">
-            <label class="toggle">
-              <input type="checkbox" id="loopSegment" />
-              <span>Loop segment</span>
-            </label>
-            <label class="toggle">
-              <input type="checkbox" id="stopAtEnd" />
-              <span>Stop at end</span>
-            </label>
-            <button type="button" id="clearFocus" class="ghost" disabled>Play all</button>
-          </div>
+        <div class="controls-row">
+          <label class="toggle">
+            <input type="checkbox" id="loopSegment" />
+            <span>Loop segment</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="stopAtEnd" />
+            <span>Stop at end</span>
+          </label>
           <div class="speed" role="group" aria-label="Playback speed">
             <div id="playbackRate" class="speed-options">
               <button type="button" class="speed-btn" data-rate="0.75" aria-pressed="false">0.75×</button>

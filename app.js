@@ -21,12 +21,10 @@ const stopAtEnd = document.getElementById("stopAtEnd");
 const playbackRate = document.getElementById("playbackRate");
 const clearFocus = document.getElementById("clearFocus");
 const playerPanel = document.getElementById("playerPanel");
-const playerExtrasToggle = document.getElementById("playerExtrasToggle");
 const iconPlay = playBtn.querySelector(".icon-play");
 const iconPause = playBtn.querySelector(".icon-pause");
 const SPEED_STORAGE_KEY = "italian-web-playback-rate";
 const PLAYLIST_COLLAPSED_KEY = "italian-web-playlist-collapsed";
-const PLAYER_COMPACT_KEY = "italian-web-player-compact";
 
 /** @typedef {{ id: string, title: string, tags?: string[], audio: string, transcript: string, expressions?: string, translations?: string }} Passage */
 
@@ -600,21 +598,26 @@ playlistToggle.addEventListener("click", () => {
   setPlaylistCollapsed(!playlistPanel.classList.contains("is-collapsed"));
 });
 
-function setPlayerCompact(compact) {
-  playerPanel.classList.toggle("is-compact", compact);
-  document.body.classList.toggle("player-expanded", !compact);
-  playerExtrasToggle.setAttribute("aria-expanded", compact ? "false" : "true");
-  playerExtrasToggle.textContent = compact ? "Options" : "Hide";
-  try {
-    localStorage.setItem(PLAYER_COMPACT_KEY, compact ? "1" : "0");
-  } catch {
-    /* ignore */
+function pinPlayer() {
+  const vv = window.visualViewport;
+  if (!vv) {
+    playerPanel.style.bottom = "0px";
+    return;
   }
+  // Keep the bar glued to the visual viewport on mobile browser chrome show/hide.
+  const bottomInset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  playerPanel.style.bottom = `${bottomInset}px`;
 }
 
-playerExtrasToggle.addEventListener("click", () => {
-  setPlayerCompact(!playerPanel.classList.contains("is-compact"));
-});
+function setupStickyPlayer() {
+  pinPlayer();
+  window.addEventListener("resize", pinPlayer);
+  window.addEventListener("orientationchange", pinPlayer);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", pinPlayer);
+    window.visualViewport.addEventListener("scroll", pinPlayer);
+  }
+}
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -638,19 +641,16 @@ async function init() {
   );
   let savedRate = "1";
   let savedCollapsed = false;
-  let savedCompact = true;
   try {
     savedRate = localStorage.getItem(SPEED_STORAGE_KEY) || "1";
     savedCollapsed = localStorage.getItem(PLAYLIST_COLLAPSED_KEY) === "1";
-    const compactPref = localStorage.getItem(PLAYER_COMPACT_KEY);
-    savedCompact = compactPref === null ? true : compactPref === "1";
   } catch {
     /* ignore */
   }
   if (!allowedRates.includes(savedRate)) savedRate = "1";
   applyPlaybackRate(savedRate);
   setPlaylistCollapsed(savedCollapsed);
-  setPlayerCompact(savedCompact);
+  setupStickyPlayer();
   registerServiceWorker();
 
   await loadPassage(passageIndexFromHash());
